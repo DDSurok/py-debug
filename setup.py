@@ -7,14 +7,14 @@ def readme():
 
 
 setup(
-  name='d-debug',
+  name='py-debug',
   version='0.0.1',
   author='DDSurok',
   author_email='ddsurok@gmail.com',
   description='This is the simplest module for logging functions.',
   long_description=readme(),
   long_description_content_type='text/markdown',
-  url='https://github.io/DDSurok',
+  url='https://github.io/DDSurok/py-debug',
   packages=find_packages(),
   install_requires=[],
   classifiers=[
@@ -24,7 +24,7 @@ setup(
   ],
   keywords='logging log debug',
   project_urls={
-    'GitHub': 'https://github.io/DDSurok'
+    'GitHub': 'https://github.io/DDSurok/py-debug'
   },
   python_requires='>=3.6'
 )
