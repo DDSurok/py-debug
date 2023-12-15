@@ -3,7 +3,10 @@ import logging
 import functools
 
 
-def log_running_time(func, level:int=logging.DEBUG):
+__call_counters = {}
+
+
+def log_running_time(func, level: int = logging.DEBUG):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         start = datetime.now()
@@ -17,7 +20,7 @@ def log_running_time(func, level:int=logging.DEBUG):
     return wrapper
 
 
-def log_args(func, level:int=logging.WARNING):
+def log_args(func, level: int = logging.DEBUG):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if level in (logging.getLevelNamesMapping().values()):
@@ -27,4 +30,22 @@ def log_args(func, level:int=logging.WARNING):
             logging.warning('Log level has not found.')
         res = func(*args, **kwargs)
         return res
+    return wrapper
+
+
+def call_counter(func, level: int = logging.DEBUG):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if func.__name__ in __call_counters.keys:
+            __call_counters[func.__name__] += 1
+        else:
+            __call_counters[func.__name__] = 1
+        if level in (logging.getLevelNamesMapping().values()):
+            log_method = getattr(logging, logging.getLevelName(level))
+            log_method(f'Function {func.__name__} has been called {__call_counters[func.__name__]} time(s).')
+        else:
+            logging.warning('Log level has not found.')
+        res = func(*args, **kwargs)
+        return res
+
     return wrapper
