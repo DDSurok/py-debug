@@ -1,6 +1,11 @@
 import logging
+import py_debug as debug
 
-from py_debug.samples.funcs import func_add
+
+@debug.call_counter
+@debug.log_args
+@debug.log_running_time
+def func_add(a, b): return a + b
 
 
 logging.basicConfig(level=logging.DEBUG)
