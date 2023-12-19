@@ -1,6 +1,6 @@
 import logging
 
-from samples.funcs import func_add
+from py_debug.samples.funcs import func_add
 
 
 logging.basicConfig(level=logging.DEBUG)
