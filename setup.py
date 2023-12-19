@@ -8,7 +8,7 @@ def readme():
 
 setup(
   name='py_debug',
-  version='0.0.1',
+  version='0.1.0',
   author='DDSurok',
   author_email='ddsurok@gmail.com',
   description='This is the simplest module for logging functions.',
@@ -26,5 +26,5 @@ setup(
   project_urls={
     'GitHub': 'https://github.io/DDSurok/py-debug'
   },
-  python_requires='>=3.6'
+  python_requires='>=3.8'
 )
