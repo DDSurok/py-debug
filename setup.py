@@ -15,10 +15,10 @@ setup(
   long_description=readme(),
   long_description_content_type='text/markdown',
   url='https://github.io/DDSurok/py-debug',
-  packages=find_packages(),
+  packages=find_packages(include=['py_debug', 'tests']),
   install_requires=[],
   classifiers=[
-    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.8',
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent'
   ],
