@@ -26,7 +26,7 @@ def log_args(func, level: int = logging.DEBUG):
         full_name = f'{func.__module__}.{func.__name__}'
         if not logging.getLevelName(level).startswith('Level '):
             if not len(args) and not len(kwargs):
-                args_info = f'without args'
+                args_info = 'without args'
             elif len(args) and not len(kwargs):
                 args_info = f'with {args = }'
             elif not len(args) and len(kwargs):
