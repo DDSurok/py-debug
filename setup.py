@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='py_debug',
-    version='0.1.0',
+    version='0.1.0-beta',
     author='DDSurok',
     author_email='ddsurok@gmail.com',
     description='This is the simplest module for logging functions.',
