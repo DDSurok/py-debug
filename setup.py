@@ -7,7 +7,7 @@ def readme():
 
 
 setup(
-    name='py_debug',
+    name='py-debugs',
     version='0.1.0-beta',
     author='DDSurok',
     author_email='ddsurok@gmail.com',
