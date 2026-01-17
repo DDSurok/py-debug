@@ -1,14 +1,15 @@
 # Development and testing dependencies
 
 # Build tools
-setuptools>=45.0
-wheel>=0.37.0
-build>=0.7.0
+setuptools>=80.9
+wheel>=0.45.1
+build>=1.4.0
+twine>=6.2.0
 
 # Testing
-pytest>=6.0.0
+pytest>=9.0.2
 
-# Code quality (optional but recommended)
-# flake8>=4.0.0
-# black>=22.0.0
-# mypy>=0.950
+# Code quality
+flake8>=4.0.0
+black>=22.0.0
+mypy>=0.950
