@@ -16,7 +16,7 @@ class TestLogArgs:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             test_func()
             assert mock_log.called
             log_message = mock_log.call_args[0][1]
@@ -29,7 +29,7 @@ class TestLogArgs:
         def test_func(a, b):
             return a + b
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             test_func(1, 2)
             assert mock_log.called
             log_message = mock_log.call_args[0][1]
@@ -42,7 +42,7 @@ class TestLogArgs:
         def test_func(x=1, y=2):
             return x * y
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             test_func(x=3, y=4)
             assert mock_log.called
             log_message = mock_log.call_args[0][1]
@@ -55,7 +55,7 @@ class TestLogArgs:
         def test_func(a, b, x=1, y=2):
             return a + b + x + y
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             test_func(1, 2, x=3, y=4)
             assert mock_log.called
             log_message = mock_log.call_args[0][1]
@@ -91,7 +91,7 @@ class TestLogArgs:
             def test_func():
                 return True
 
-            with patch('py_debug.util.logging.log') as mock_log:
+            with patch('logging.log') as mock_log:
                 test_func()
                 assert mock_log.called
                 assert mock_log.call_args[0][0] == level
@@ -102,10 +102,10 @@ class TestLogArgs:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.warning') as mock_warning:
+        with patch('logging.warning') as mock_warning:
             test_func()
             assert mock_warning.called
-            assert 'Log level has not found' in mock_warning.call_args[0][0]
+            assert 'Invalid log level' in mock_warning.call_args[0][0]
 
     def test_empty_args_and_kwargs(self):
         """Test that empty args and kwargs are handled correctly."""
@@ -113,7 +113,7 @@ class TestLogArgs:
         def test_func(*args, **kwargs):
             return len(args) + len(kwargs)
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             result = test_func()
             assert result == 0
             assert mock_log.called
@@ -126,7 +126,44 @@ class TestLogArgs:
         def test_func(a, b, c):
             return a, b, c
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             result = test_func([1, 2, 3], {'key': 'value'}, "string")
             assert result == ([1, 2, 3], {'key': 'value'}, "string")
             assert mock_log.called
+
+    def test_with_none_values(self):
+        """Test log_args with None values in arguments."""
+        @log_args()
+        def test_func(a, b=None):
+            return a, b
+
+        with patch('logging.log') as mock_log:
+            result = test_func(1, None)
+            assert result == (1, None)
+            assert mock_log.called
+
+    def test_with_exception(self):
+        """Test that log_args doesn't catch exceptions from wrapped function."""
+        @log_args()
+        def test_func():
+            raise ValueError("Test error")
+
+        with patch('logging.log') as mock_log:
+            with pytest.raises(ValueError, match="Test error"):
+                test_func()
+            
+            # Should have logged before the exception
+            assert mock_log.called
+
+    def test_exception_with_invalid_log_level(self):
+        """Test log_args with exception and invalid log level."""
+        @log_args(level=99999)
+        def test_func():
+            raise ValueError("Test error")
+
+        with patch('logging.warning') as mock_warning:
+            with pytest.raises(ValueError):
+                test_func()
+            
+            # Should log warning about invalid log level
+            assert mock_warning.called

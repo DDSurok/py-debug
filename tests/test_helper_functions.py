@@ -1,103 +1,96 @@
-"""Unit tests for internal helper functions."""
-import logging
-from unittest.mock import patch, MagicMock
-
+"""Unit tests for helper functions (reset_call_counters, get_call_count)."""
 import pytest
 
-from py_debug.util import _is_valid_log_level, _get_function_name, _format_args_info
+from py_debug import log_call_counter, reset_call_counters, get_call_count
 
 
-class TestIsValidLogLevel:
-    """Test cases for _is_valid_log_level helper function."""
+class TestHelperFunctions:
+    """Test cases for helper functions."""
 
-    def test_valid_log_levels(self):
-        """Test that valid log levels return True."""
-        valid_levels = [
-            logging.DEBUG,
-            logging.INFO,
-            logging.WARNING,
-            logging.ERROR,
-            logging.CRITICAL,
-        ]
-        
-        for level in valid_levels:
-            assert _is_valid_log_level(level) is True
+    def setup_method(self):
+        """Reset call counters before each test."""
+        reset_call_counters()
 
-    def test_invalid_log_level(self):
-        """Test that invalid log levels return False."""
-        assert _is_valid_log_level(99999) is False
-        assert _is_valid_log_level(-1) is False
-
-    def test_type_error_handling(self):
-        """Test that TypeError is handled gracefully."""
-        # Mock logging.getLevelName to raise TypeError
-        with patch('py_debug.util.logging.getLevelName', side_effect=TypeError):
-            assert _is_valid_log_level(123) is False
-
-    def test_attribute_error_handling(self):
-        """Test that AttributeError is handled gracefully."""
-        # Mock logging.getLevelName to raise AttributeError
-        with patch('py_debug.util.logging.getLevelName', side_effect=AttributeError):
-            assert _is_valid_log_level(123) is False
-
-
-class TestGetFunctionName:
-    """Test cases for _get_function_name helper function."""
-
-    def test_standard_function(self):
-        """Test getting name for a standard function."""
+    def test_reset_call_counters(self):
+        """Test that reset_call_counters clears all counters."""
+        @log_call_counter()
         def test_func():
-            pass
+            return True
+
+        test_func()
+        test_func()
+        assert get_call_count(test_func) == 2
+
+        reset_call_counters()
+        assert get_call_count(test_func) == 0
+
+    def test_get_call_count(self):
+        """Test that get_call_count returns correct count."""
+        @log_call_counter()
+        def test_func():
+            return True
+
+        assert get_call_count(test_func) == 0
+
+        test_func()
+        assert get_call_count(test_func) == 1
+
+        test_func()
+        test_func()
+        assert get_call_count(test_func) == 3
+
+    def test_get_call_count_never_called(self):
+        """Test get_call_count for function that was never called."""
+        def test_func():
+            return True
+
+        assert get_call_count(test_func) == 0
+
+    def test_reset_affects_multiple_functions(self):
+        """Test that reset affects all functions."""
+        @log_call_counter()
+        def func_a():
+            return 'a'
+
+        @log_call_counter()
+        def func_b():
+            return 'b'
+
+        func_a()
+        func_a()
+        func_b()
+        func_b()
+        func_b()
+
+        assert get_call_count(func_a) == 2
+        assert get_call_count(func_b) == 3
+
+        reset_call_counters()
+
+        assert get_call_count(func_a) == 0
+        assert get_call_count(func_b) == 0
+
+    def test_reset_during_execution(self):
+        """Test that reset_call_counters works correctly during execution."""
+        @log_call_counter()
+        def test_func():
+            return True
+
+        test_func()
+        test_func()
+        assert get_call_count(test_func) == 2
         
-        name = _get_function_name(test_func)
-        assert 'test_func' in name
-        assert '.' in name  # Should include module name
-
-    def test_nested_function(self):
-        """Test getting name for a nested function."""
-        def outer():
-            def inner():
-                pass
-            return inner
+        reset_call_counters()
+        assert get_call_count(test_func) == 0
         
-        inner_func = outer()
-        name = _get_function_name(inner_func)
-        assert 'inner' in name
+        # After reset, counter should start from 1
+        test_func()
+        assert get_call_count(test_func) == 1
 
+    def test_get_call_count_without_decorator(self):
+        """Test get_call_count for function without decorator."""
+        def test_func():
+            return True
 
-class TestFormatArgsInfo:
-    """Test cases for _format_args_info helper function."""
-
-    def test_no_args_no_kwargs(self):
-        """Test formatting with no arguments."""
-        result = _format_args_info((), {})
-        assert result == 'without args'
-
-    def test_args_only(self):
-        """Test formatting with positional args only."""
-        result = _format_args_info((1, 2, 3), {})
-        assert 'args = ' in result
-        assert 'kwargs' not in result
-
-    def test_kwargs_only(self):
-        """Test formatting with kwargs only."""
-        result = _format_args_info((), {'x': 1, 'y': 2})
-        assert 'kwargs = ' in result
-        assert 'args = ' not in result or 'and' in result
-
-    def test_both_args_and_kwargs(self):
-        """Test formatting with both args and kwargs."""
-        result = _format_args_info((1, 2), {'x': 3})
-        assert 'args = ' in result
-        assert 'kwargs = ' in result
-        assert 'and' in result
-
-    def test_empty_args_with_kwargs(self):
-        """Test formatting with empty tuple args and kwargs."""
-        result = _format_args_info((), {'key': 'value'})
-        assert 'kwargs = ' in result
-
-    def test_args_with_empty_kwargs(self):
-        """Test formatting with args and empty kwargs."""
-        result = _format_args_info((1, 2), {})
-        assert 'args = ' in result
+        # Should return 0 for functions without the decorator
+        assert get_call_count(test_func) == 0

@@ -20,7 +20,7 @@ class TestLogCallCounter:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             test_func()
             test_func()
             test_func()
@@ -36,7 +36,7 @@ class TestLogCallCounter:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             # First 3 calls should be logged (0, 1, 2)
             test_func()  # Call 1
             test_func()  # Call 2
@@ -51,7 +51,7 @@ class TestLogCallCounter:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             test_func()  # Call 1 - logged
             test_func()  # Call 2 - logged
             test_func()  # Call 3 - muted
@@ -67,7 +67,7 @@ class TestLogCallCounter:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             # Call 5, 10, 15, 20 should be logged
             for i in range(1, 21):
                 test_func()
@@ -81,7 +81,7 @@ class TestLogCallCounter:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             # Calls 1, 2 (mute_after), 5, 10, 15, 20 (log_every) should be logged
             for i in range(1, 21):
                 test_func()
@@ -119,7 +119,7 @@ class TestLogCallCounter:
             def test_func():
                 return True
 
-            with patch('py_debug.util.logging.log') as mock_log:
+            with patch('logging.log') as mock_log:
                 test_func()
                 assert mock_log.called
                 assert mock_log.call_args[0][0] == level
@@ -130,10 +130,10 @@ class TestLogCallCounter:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.warning') as mock_warning:
+        with patch('logging.warning') as mock_warning:
             test_func()
             assert mock_warning.called
-            assert 'Log level has not found' in mock_warning.call_args[0][0]
+            assert 'Invalid log level' in mock_warning.call_args[0][0]
 
     def test_multiple_functions_separate_counters(self):
         """Test that different functions have separate counters."""
@@ -145,7 +145,7 @@ class TestLogCallCounter:
         def func_b():
             return 'b'
 
-        with patch('py_debug.util.logging.log'):
+        with patch('py_debug.logging.log'):
             func_a()
             func_a()
             func_b()
@@ -161,7 +161,7 @@ class TestLogCallCounter:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             test_func()
             test_func()
             test_func()
@@ -177,7 +177,7 @@ class TestLogCallCounter:
         def test_func(a, b, c=10):
             return a + b + c
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             result = test_func(1, 2, c=3)
             assert result == 6
             assert mock_log.called
@@ -195,3 +195,88 @@ class TestLogCallCounter:
             @log_call_counter(log_every=0)
             def test_func():
                 pass
+
+    def test_mute_after_zero(self):
+        """Test log_call_counter with mute_after=0 (no initial logging)."""
+        @log_call_counter(mute_after=0, log_every=3)
+        def test_func():
+            return True
+
+        with patch('logging.log') as mock_log:
+            # Calls 3, 6, 9 should be logged (no initial calls)
+            for i in range(1, 10):
+                test_func()
+            
+            # Should log at calls 3, 6, 9 = 3 times
+            assert mock_log.call_count == 3
+
+    def test_boundary_mute_after(self):
+        """Test log_call_counter at mute_after boundary."""
+        @log_call_counter(mute_after=3, log_every=10)
+        def test_func():
+            return True
+
+        with patch('logging.log') as mock_log:
+            # Calls 1, 2, 3 should be logged, 4 should not
+            test_func()  # 1 - logged
+            test_func()  # 2 - logged
+            test_func()  # 3 - logged
+            test_func()  # 4 - muted
+            
+            assert mock_log.call_count == 3
+
+    def test_with_exception(self):
+        """Test that log_call_counter increments even when function raises exception."""
+        @log_call_counter()
+        def test_func():
+            raise ValueError("Test error")
+
+        with patch('py_debug.logging.log'):
+            # First call should increment counter
+            with pytest.raises(ValueError):
+                test_func()
+            
+            # Second call should also increment
+            with pytest.raises(ValueError):
+                test_func()
+            
+            # Counter should be 2 even though both calls failed
+            assert get_call_count(test_func) == 2
+
+    def test_exception_with_invalid_log_level(self):
+        """Test log_call_counter with exception and invalid log level."""
+        @log_call_counter(level=99999, mute_after=0)
+        def test_func():
+            raise ValueError("Test error")
+
+        with patch('logging.warning') as mock_warning:
+            with pytest.raises(ValueError):
+                test_func()
+            
+            # Should log warning about invalid log level
+            assert mock_warning.called
+
+    def test_single_call(self):
+        """Test log_call_counter with a single call."""
+        @log_call_counter(mute_after=5)
+        def test_func():
+            return True
+
+        with patch('logging.log') as mock_log:
+            test_func()
+            # Single call should be logged (within mute_after)
+            assert mock_log.call_count == 1
+
+    def test_mute_after_greater_than_log_every(self):
+        """Test log_call_counter when mute_after > log_every."""
+        @log_call_counter(mute_after=10, log_every=5)
+        def test_func():
+            return True
+
+        with patch('logging.log') as mock_log:
+            # Calls 1-10 (mute_after), 15, 20 (log_every) should be logged
+            for i in range(1, 21):
+                test_func()
+            
+            # Should log: 1-10 (10 times), 15, 20 (2 times) = 12 times
+            assert mock_log.call_count == 12

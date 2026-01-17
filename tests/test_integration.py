@@ -23,7 +23,7 @@ class TestIntegration:
         def test_func(a, b):
             return a + b
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             result = test_func(1, 2)
             
             assert result == 3
@@ -38,7 +38,7 @@ class TestIntegration:
         def test_func(x):
             return x * 2
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             result1 = test_func(5)
             result2 = test_func(10)
             
@@ -61,7 +61,7 @@ class TestIntegration:
         def func_c():
             return 42
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             assert func_a(1) == 2
             assert func_b(2, 3) == 5
             assert func_c() == 42
@@ -90,3 +90,38 @@ class TestIntegration:
         test_func()
         # Decorators are applied bottom-up, so execution is top-down
         assert call_order == ['counter', 'args', 'time']
+
+    def test_decorators_with_exceptions(self):
+        """Test that exceptions propagate correctly through multiple decorators."""
+        @log_call_counter()
+        @log_args()
+        @log_running_time()
+        def test_func():
+            raise ValueError("Test error")
+
+        with patch('py_debug.logging.log'):
+            with pytest.raises(ValueError, match="Test error"):
+                test_func()
+            
+            # Counter should still increment
+            from py_debug import get_call_count
+            assert get_call_count(test_func) == 1
+
+    def test_different_log_levels_together(self):
+        """Test decorators with different log levels work together."""
+        @log_call_counter(level=logging.DEBUG)
+        @log_args(level=logging.INFO)
+        @log_running_time(level=logging.WARNING)
+        def test_func(x):
+            return x * 2
+
+        with patch('logging.log') as mock_log:
+            test_func(5)
+            
+            # Should have logged with different levels
+            assert mock_log.call_count >= 3
+            # Verify different levels were used
+            levels_used = [call[0][0] for call in mock_log.call_args_list]
+            assert logging.DEBUG in levels_used
+            assert logging.INFO in levels_used
+            assert logging.WARNING in levels_used

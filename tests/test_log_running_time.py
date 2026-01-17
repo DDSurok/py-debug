@@ -1,7 +1,7 @@
 """Unit tests for log_running_time decorator."""
 import logging
 import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -18,7 +18,7 @@ class TestLogRunningTime:
             time.sleep(0.01)
             return 42
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             result = test_func()
             
             assert result == 42
@@ -56,7 +56,7 @@ class TestLogRunningTime:
             def test_func():
                 return True
 
-            with patch('py_debug.util.logging.log') as mock_log:
+            with patch('logging.log') as mock_log:
                 test_func()
                 assert mock_log.called
                 assert mock_log.call_args[0][0] == level
@@ -67,10 +67,10 @@ class TestLogRunningTime:
         def test_func():
             return True
 
-        with patch('py_debug.util.logging.warning') as mock_warning:
+        with patch('logging.warning') as mock_warning:
             test_func()
             assert mock_warning.called
-            assert 'Log level has not found' in mock_warning.call_args[0][0]
+            assert 'Invalid log level' in mock_warning.call_args[0][0]
 
     def test_with_function_args(self):
         """Test decorator works with functions that have arguments."""
@@ -78,7 +78,7 @@ class TestLogRunningTime:
         def test_func(a, b):
             return a + b
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             result = test_func(1, 2)
             assert result == 3
             assert mock_log.called
@@ -89,7 +89,7 @@ class TestLogRunningTime:
         def test_func(x=1, y=2):
             return x * y
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             result = test_func(x=3, y=4)
             assert result == 12
             assert mock_log.called
@@ -101,7 +101,7 @@ class TestLogRunningTime:
             time.sleep(0.1)
             return True
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             test_func()
             log_message = mock_log.call_args[0][1]
             # Extract time from log message
@@ -118,7 +118,7 @@ class TestLogRunningTime:
         def test_func():
             raise ValueError("Test error")
 
-        with patch('py_debug.util.logging.log') as mock_log:
+        with patch('logging.log') as mock_log:
             with pytest.raises(ValueError, match="Test error"):
                 test_func()
             
@@ -126,3 +126,46 @@ class TestLogRunningTime:
             assert mock_log.called
             log_message = mock_log.call_args[0][1]
             assert 'failed' in log_message or 'ValueError' in log_message
+
+    def test_exception_with_invalid_log_level(self):
+        """Test exception handling with invalid log level."""
+        @log_running_time(level=99999)
+        def test_func():
+            raise ValueError("Test error")
+
+        with patch('logging.warning') as mock_warning:
+            with pytest.raises(ValueError, match="Test error"):
+                test_func()
+            
+            # Should log warning about invalid log level
+            assert mock_warning.called
+
+    def test_very_fast_function(self):
+        """Test decorator with a very fast function."""
+        @log_running_time()
+        def test_func():
+            return 42
+
+        with patch('logging.log') as mock_log:
+            result = test_func()
+            assert result == 42
+            assert mock_log.called
+            log_message = mock_log.call_args[0][1]
+            assert 'completed in' in log_message
+
+    def test_exception_logs_time(self):
+        """Test that log_running_time logs time even when exception occurs."""
+        @log_running_time()
+        def test_func():
+            time.sleep(0.01)
+            raise ValueError("Test error")
+
+        with patch('logging.log') as mock_log:
+            with pytest.raises(ValueError):
+                test_func()
+            
+            # Should log the failure with time
+            assert mock_log.called
+            log_message = mock_log.call_args[0][1]
+            assert 'failed' in log_message
+            assert 'seconds' in log_message
