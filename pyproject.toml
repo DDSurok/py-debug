@@ -1,0 +1,26 @@
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "setuptools_scm[toml]>=8.0",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "your-package-name"
+dynamic = ["version"]
+
+description = "This is the simplest module for logging functions."
+readme = "README.md"
+authors = [{ name="DDSurok", email="ddsurok@gmail.com" }]
+license = { text = "MIT" }
+requires-python = ">=3.8"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.io/DDSurok/py-debug"
+
+[tool.setuptools_scm]
+version_scheme = "release-branch-semver"
+local_scheme = "no-local-version"
+tag_regex = "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
