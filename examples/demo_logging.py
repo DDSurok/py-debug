@@ -8,14 +8,10 @@ configured to print to the console.
 import logging
 import time
 
-# Configure logging to print to console
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%H:%M:%S'
-)
-
 from py_debug import log_running_time, log_args, log_call_counter, reset_call_counters
+
+# Configure logging to print to console
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
 
 def main():
